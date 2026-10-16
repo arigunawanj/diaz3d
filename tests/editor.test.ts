@@ -95,3 +95,11 @@ test('load replaces state with a copy', () => {
   assert.deepEqual(d, other);
   assert.notEqual(d, other);
 });
+
+test('isDirty ignores key order (draft round-trip)', async () => {
+  const { isDirty } = await import('../src/domain/editor.ts');
+  const { parseDesign } = await import('../src/domain/validate.ts');
+  const restored = parseDesign(JSON.parse(JSON.stringify(fresh())));
+  assert.equal(isDirty(restored), false);
+  assert.equal(isDirty(designReducer(restored, { type: 'setBackdrop', patch: { panelCount: 2 } })), true);
+});

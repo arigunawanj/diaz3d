@@ -50,3 +50,27 @@ test('code and token formats', () => {
   assert.match(makeCode(), /^DZ-[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{4}$/);
   assert.match(makeToken(), /^[a-f0-9]{24}$/);
 });
+
+test('rejects inactive catalog items used beyond the package', () => {
+  const catalog = structuredClone(DEFAULT_CATALOG);
+  catalog.find((c) => c.id === 'led-backdrop')!.active = false;
+  const d = design();
+  d.backdrop.led = true; // safari preset has LED off, so this is an extra
+  assert.throws(() => buildSubmissionRecord(input({ design: d }), { catalog, basePrice: 2500000 }, TODAY),
+    (e: unknown) => e instanceof ValidationError && e.field === 'design' && /tidak tersedia/.test(e.message));
+  catalog.find((c) => c.id === 'karakter')!.active = false; // included in safari: still fine
+  d.backdrop.led = false;
+  assert.equal(buildSubmissionRecord(input({ design: d }), { catalog, basePrice: 2500000 }, TODAY).breakdown.total, 2900000);
+});
+
+test('rejects impossible calendar dates', () => {
+  throwsField(() => buildSubmissionRecord(input({ eventDate: '2026-02-31' }), ctx, TODAY), 'eventDate');
+});
+
+test('rate limiter allows a burst then blocks per key', async () => {
+  const { createRateLimiter } = await import('../src/server/rateLimit.ts');
+  const allow = createRateLimiter(3, 60_000);
+  assert.deepEqual([allow('a', 0), allow('a', 1), allow('a', 2), allow('a', 3)], [true, true, true, false]);
+  assert.equal(allow('b', 3), true);
+  assert.equal(allow('a', 60_001), true);
+});

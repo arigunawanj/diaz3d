@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import type { TemplateType } from '@/domain/design';
-import { PRESETS, getPreset } from '@/domain/presets';
+import { PRESETS } from '@/domain/presets';
+import { isDirty } from '@/domain/editor';
 import { useConfigurator } from './context';
 import { Section, Seg } from './ui';
 
@@ -12,13 +13,12 @@ const TYPES: { value: TemplateType; label: string }[] = [
   { value: 'formal', label: 'Formal' },
 ];
 
-export const isDirty = (design: ReturnType<typeof useConfigurator>['design']) =>
-  JSON.stringify(design) !== JSON.stringify(getPreset(design.presetId)?.design);
-
 export const TemplateTab: React.FC = () => {
   const { design, dispatch, select } = useConfigurator();
   const [type, setType] = useState<TemplateType>(design.templateType);
   const [pending, setPending] = useState<string | null>(null);
+  // Follow the design when a saved draft (or another template) is loaded.
+  useEffect(() => setType(design.templateType), [design.templateType]);
 
   const apply = (presetId: string) => {
     select(null);

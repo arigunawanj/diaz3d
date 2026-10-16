@@ -6,6 +6,9 @@ import {
   Smile, Sparkles, Spotlight, Sprout, Table2, Type, Zap, type LucideIcon,
 } from 'lucide-react';
 import type { CatalogId } from '@/domain/design';
+import type { CatalogItem } from '@/domain/catalog';
+
+export const isActive = (catalog: CatalogItem[], id: CatalogId) => catalog.find((c) => c.id === id)?.active !== false;
 
 export const ITEM_ICONS: Record<CatalogId, LucideIcon> = {
   panel: Frame,

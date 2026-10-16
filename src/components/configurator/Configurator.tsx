@@ -6,7 +6,7 @@ import gsap from 'gsap';
 import type { CatalogId } from '@/domain/design';
 import type { CatalogItem } from '@/domain/catalog';
 import { DEFAULT_PRESET_ID, getPreset } from '@/domain/presets';
-import { designReducer, loadDraft, saveDraft } from '@/domain/editor';
+import { designReducer, isDirty, loadDraft, saveDraft } from '@/domain/editor';
 import { priceDesign } from '@/domain/pricing';
 import { SURFACE_BACKDROP, SURFACE_GARLAND, type CameraView } from '@/components/3d/constants';
 import { dur } from '@/components/3d/motion';
@@ -15,7 +15,6 @@ import { LeftPanel } from './LeftPanel';
 import { ViewportOverlay } from './ViewportOverlay';
 import { BottomBar } from './BottomBar';
 import { PriceDrawer } from './PriceDrawer';
-import { isDirty } from './TemplateTab';
 import { SubmitModal } from './SubmitModal';
 
 const DecorScene = dynamic(() => import('@/components/3d/DecorScene').then((m) => m.DecorScene), {

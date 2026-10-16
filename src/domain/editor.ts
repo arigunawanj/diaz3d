@@ -99,3 +99,14 @@ export function saveDraft(storage: Pick<Storage, 'setItem'> | null, d: Design): 
     // storage full or blocked: drafts are a convenience only
   }
 }
+
+const canonical = (v: unknown): unknown =>
+  Array.isArray(v) ? v.map(canonical)
+    : v && typeof v === 'object' ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, canonical((v as Record<string, unknown>)[k])]))
+    : v;
+
+/** True when the design differs from its preset (key order ignored, so restored drafts compare equal). */
+export function isDirty(d: Design): boolean {
+  const preset = getPreset(d.presetId);
+  return !preset || JSON.stringify(canonical(d)) !== JSON.stringify(canonical(preset.design));
+}

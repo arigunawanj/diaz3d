@@ -45,7 +45,7 @@ export const ViewportOverlay: React.FC<{ view: CameraView; onView(v: CameraView)
       <div className="vp-bottom">
         <span className="vp-hint"><Move3d size={16} aria-hidden="true" /> Seret untuk melihat sekeliling</span>
         <div className="vp-chips">
-          {chips.map(({ key, label, Icon, on, id, toggle }) => {
+          {chips.filter((c) => c.on || catalog.find((x) => x.id === c.id)?.active !== false).map(({ key, label, Icon, on, id, toggle }) => {
             const cost = nextUnitCost(design, catalog, id);
             return (
               <button key={key} type="button" className="vp-chip" aria-pressed={on} onClick={toggle}>

@@ -6,7 +6,7 @@ import { LIMITS } from '@/domain/design';
 import { nextUnitCost } from '@/domain/pricing';
 import { useConfigurator } from './context';
 import { CatalogCard, PriceTag } from './CatalogCard';
-import { Field, Section, Seg, Stepper, Toggle } from './ui';
+import { Field, Section, Seg, Stepper, Toggle, isActive } from './ui';
 
 export const BalloonTab: React.FC = () => {
   const { design, dispatch, catalog } = useConfigurator();
@@ -19,7 +19,7 @@ export const BalloonTab: React.FC = () => {
       <Section title="Balon garland" aside="4,5 m termasuk paket">
         <div className="field-row">
           <PriceTag cost={nextUnitCost(design, catalog, 'garland-meter')} unit="meter tambahan" />
-          <Stepper label="panjang garland" value={g.lengthM} min={LIMITS.garlandMin} max={LIMITS.garlandMax} step={LIMITS.garlandStep}
+          <Stepper label="panjang garland" value={g.lengthM} min={LIMITS.garlandMin} max={isActive(catalog, 'garland-meter') ? LIMITS.garlandMax : Math.max(LIMITS.garlandMin, g.lengthM)} step={LIMITS.garlandStep}
             format={(v) => `${v.toLocaleString('id-ID')} m`} onChange={(lengthM) => set({ lengthM })} />
         </div>
         <Toggle label="Tampilkan garland" checked={g.visible} onChange={(visible) => set({ visible })} hint="Disembunyikan tidak mengurangi harga paket" />
@@ -66,8 +66,10 @@ export const BalloonTab: React.FC = () => {
           <Seg label="Motif" value={g.pattern} onChange={(pattern) => set({ pattern })}
             options={[{ value: 'polos', label: 'Polos' }, { value: 'dalmatian', label: 'Dalmatian' }, { value: 'polka', label: 'Polkadot' }]} />
         </Field>
-        <Toggle label="Aksen daun" hint="Monstera & palem di sela balon" checked={g.leafAccent} onChange={(leafAccent) => set({ leafAccent })} />
-        {!g.leafAccent && <PriceTag cost={nextUnitCost(design, catalog, 'aksen-balon')} />}
+        {(isActive(catalog, 'aksen-balon') || g.leafAccent) && <>
+          <Toggle label="Aksen daun" hint="Monstera & palem di sela balon" checked={g.leafAccent} onChange={(leafAccent) => set({ leafAccent })} />
+          {!g.leafAccent && <PriceTag cost={nextUnitCost(design, catalog, 'aksen-balon')} />}
+        </>}
       </Section>
       <Section title="Balon tambahan" aside="Seret ke panggung">
         <div className="card-list">

@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import gsap from 'gsap';
 import { CheckCircle2, X } from 'lucide-react';
 import { formatIDR } from '@/domain/pricing';
+import { fitWithin } from '@/domain/screenshot';
 import { dur } from '@/components/3d/motion';
 import { useConfigurator } from './context';
 import { PriceLines } from './PriceDrawer';
@@ -19,8 +20,17 @@ export const SubmitModal: React.FC<{ canvas: HTMLCanvasElement | null; onClose()
   const [done, setDone] = useState<{ code: string; token: string } | null>(null);
   const card = useRef<HTMLDivElement>(null);
   const first = useRef<HTMLInputElement>(null);
+  // Downscale so high-DPI canvases stay under the server's 3 MB screenshot limit.
   const screenshot = useMemo(() => {
-    try { return canvas?.toDataURL('image/png') ?? null; } catch { return null; }
+    if (!canvas) return null;
+    try {
+      const [w, h] = fitWithin(canvas.width, canvas.height, 1280);
+      const out = document.createElement('canvas');
+      out.width = w;
+      out.height = h;
+      out.getContext('2d')?.drawImage(canvas, 0, 0, w, h);
+      return out.toDataURL('image/png');
+    } catch { return null; }
   }, [canvas]);
 
   useEffect(() => {
