@@ -10,6 +10,6 @@ export const Logo = () => (
 export const Header = () => (
   <header className="site-header">
     <Logo />
-    <a href="#cara-kerja" className="nav-link">Cara kerja <ArrowUpRight size={15} aria-hidden="true" /></a>
+    <a href="/#cara-kerja" className="nav-link">Cara kerja <ArrowUpRight size={15} aria-hidden="true" /></a>
   </header>
 );
