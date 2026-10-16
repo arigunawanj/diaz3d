@@ -3,14 +3,17 @@ import { Hero } from '@/components/site/Hero';
 import { HowItWorks } from '@/components/site/HowItWorks';
 import { Footer } from '@/components/site/Footer';
 import { Configurator } from '@/components/configurator/Configurator';
-import { DEFAULT_CATALOG, BASE_PACKAGE_PRICE } from '@/domain/catalog';
+import { getPricingContext } from '@/server/pricingContext';
 
-export default function Home() {
+export const dynamic = 'force-dynamic';
+
+export default async function Home() {
+  const { catalog, basePrice } = await getPricingContext();
   return (
     <main className="site">
       <Header />
       <Hero />
-      <Configurator catalog={DEFAULT_CATALOG} basePrice={BASE_PACKAGE_PRICE} />
+      <Configurator catalog={catalog} basePrice={basePrice} />
       <HowItWorks />
       <Footer />
     </main>
