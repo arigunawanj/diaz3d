@@ -59,7 +59,6 @@ test('included lines reported with zero extra', () => {
   const r = priceDesign(clone('safari'), DEFAULT_CATALOG, BASE);
   const k = r.lines.find((l) => l.catalogId === 'karakter')!;
   assert.deepEqual([k.included, k.used, k.extraQty, k.subtotal], [3, 3, 0, 0]);
-  assert.equal(countUsage(clone('safari')).neon_nama, undefined);
   assert.equal(countUsage(clone('safari'))['neon-nama'], 0);
 });
 

@@ -1,125 +1,39 @@
 'use client';
 
-import React, { useState, useRef, useMemo } from 'react';
+// Temporary dev harness for the 3D scene (replaced by the configurator in Task 7).
+import React, { useReducer, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { DEFAULT_DECORATION, PRICING_CONFIG } from '@/lib/constants';
-import { DecorationState, CameraView } from '@/types/decoration';
-import { TopNav } from '@/components/ui/TopNav';
-import { CustomizerPanel } from '@/components/ui/CustomizerPanel';
-import { PriceModal } from '@/components/ui/PriceModal';
-import { FloatingTools } from '@/components/ui/FloatingTools';
+import { PRESETS, DEFAULT_PRESET_ID, getPreset } from '@/domain/presets';
+import { designReducer } from '@/domain/editor';
+import type { CameraView } from '@/components/3d/DecorScene';
 
-// Dynamically load 3D Scene on client side only
-const Scene = dynamic(() => import('@/components/3d/Scene').then((mod) => mod.Scene), {
-  ssr: false,
-  loading: () => (
-    <div className="w-full h-full flex flex-col items-center justify-center bg-neutral-950 text-white gap-4">
-      <div className="w-12 h-12 rounded-full border-4 border-amber-400 border-t-transparent animate-spin" />
-      <div className="text-center">
-        <h2 className="text-lg font-bold">Memuat Diaz3D Studio...</h2>
-        <p className="text-xs text-neutral-400">Menyiapkan panggung 3D & dekorasi</p>
-      </div>
-    </div>
-  ),
-});
+const DecorScene = dynamic(() => import('@/components/3d/DecorScene').then((m) => m.DecorScene), { ssr: false });
 
 export default function Home() {
-  const [decoration, setDecoration] = useState<DecorationState>(DEFAULT_DECORATION);
-  const [panelCollapsed, setPanelCollapsed] = useState(false);
-  const [cameraView, setCameraView] = useState<CameraView>('front');
-  const [autoRotate, setAutoRotate] = useState<boolean>(false);
-  const [isPriceModalOpen, setIsPriceModalOpen] = useState<boolean>(false);
+  const [design, dispatch] = useReducer(designReducer, structuredClone(getPreset(DEFAULT_PRESET_ID)!.design));
+  const [selected, setSelected] = useState<string | null>(null);
+  const [view, setView] = useState<CameraView>('front');
   const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  // Partial update helper
-  const handleUpdate = (updates: Partial<DecorationState>) => {
-    setDecoration((prev) => ({
-      ...prev,
-      ...updates,
-    }));
-  };
-
-  // Price estimation calculation
-  const totalPriceFormatted = useMemo(() => {
-    let total = PRICING_CONFIG.basePackage;
-    total += PRICING_CONFIG.balloonPerMeter * 4.5;
-    total += PRICING_CONFIG.marqueeNumber;
-
-    let characterCount = 0;
-    if (decoration.leftCharacter !== 'none') characterCount++;
-    if (decoration.centerLeftCharacter !== 'none') characterCount++;
-    if (decoration.centerRightCharacter !== 'none') characterCount++;
-    total += PRICING_CONFIG.characterCutout * characterCount;
-
-    if (decoration.showPedestal) total += PRICING_CONFIG.cakePedestal;
-    if (decoration.backdropLedGlow) total += PRICING_CONFIG.ledNeonOutline;
-
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      maximumFractionDigits: 0,
-    }).format(total);
-  }, [decoration]);
-
-  // Take snapshot from WebGL Canvas
-  const handleTakeSnapshot = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    try {
-      const dataUrl = canvas.toDataURL('image/png');
-      const link = document.createElement('a');
-      link.download = `diaz3d-dekorasi-${decoration.titleText.toLowerCase().replace(/\s+/g, '-') || 'custom'}.png`;
-      link.href = dataUrl;
-      link.click();
-    } catch (e) {
-      console.error('Failed to capture snapshot', e);
-    }
-  };
-
   return (
-    <main className={`studio-shell relative w-screen h-dvh overflow-hidden bg-neutral-950 select-none ${panelCollapsed ? 'panel-collapsed' : ''}`}>
-      {/* Top Navbar */}
-      <TopNav
-        cameraView={cameraView}
-        setCameraView={setCameraView}
-        autoRotate={autoRotate}
-        setAutoRotate={setAutoRotate}
-        onOpenPriceModal={() => setIsPriceModalOpen(true)}
-        onTakeScreenshot={handleTakeSnapshot}
-        totalPriceFormatted={totalPriceFormatted}
-      />
-
-      {/* Fullscreen 3D Scene */}
-      <div className="studio-viewport">
-        <Scene
-          state={decoration}
-          cameraView={cameraView}
-          autoRotate={autoRotate}
-          canvasRef={canvasRef}
-        />
+    <main style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ padding: 8, display: 'flex', gap: 8, flexWrap: 'wrap', fontSize: 13 }}>
+        <select value={design.presetId} onChange={(e) => dispatch({ type: 'applyPreset', presetId: e.target.value })}>
+          {PRESETS.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+        </select>
+        <button onClick={() => dispatch({ type: 'setBackdrop', patch: { panelCount: design.backdrop.panelCount + 1 } })}>panel+ ({design.backdrop.panelCount})</button>
+        <button onClick={() => dispatch({ type: 'setBackdrop', patch: { panelCount: design.backdrop.panelCount - 1 } })}>panel-</button>
+        <button onClick={() => dispatch({ type: 'setGarland', patch: { lengthM: design.garland.lengthM + 1.5 } })}>garland+ ({design.garland.lengthM})</button>
+        <button onClick={() => dispatch({ type: 'setGarland', patch: { palette: ['#C2552B', '#F2C14E', '#FFFFFF'] } })}>palette</button>
+        <button onClick={() => dispatch({ type: 'addItem', uid: crypto.randomUUID(), catalogId: 'balon-jumbo' })}>+jumbo</button>
+        <button onClick={() => selected && dispatch({ type: 'removeItem', uid: selected })}>hapus</button>
+        {(['front', 'angle', 'top', 'closeup'] as const).map((v) => <button key={v} onClick={() => setView(v)}>{v}</button>)}
+        <span>selected: {selected ?? '-'}</span>
       </div>
-
-      {/* On-Canvas Floating Helpers */}
-      <FloatingTools
-        cameraView={cameraView}
-        setCameraView={setCameraView}
-      />
-
-      {/* Interactive Customization Drawer / Sidebar */}
-      <CustomizerPanel
-        state={decoration}
-        onChange={handleUpdate}
-        onCollapsedChange={setPanelCollapsed}
-      />
-
-      {/* Quotation & Order Modal */}
-      <PriceModal
-        isOpen={isPriceModalOpen}
-        onClose={() => setIsPriceModalOpen(false)}
-        state={decoration}
-        onDownloadSnapshot={handleTakeSnapshot}
-      />
+      <div style={{ flex: 1 }}>
+        <DecorScene design={design} selectedUid={selected} onSelect={setSelected} onMoveItem={(uid, position) => dispatch({ type: 'moveItem', uid, position })}
+          onDropCatalog={(catalogId, position) => dispatch({ type: 'addItem', uid: crypto.randomUUID(), catalogId, position })}
+          cameraView={view} focusUid={null} canvasRef={canvasRef} />
+      </div>
     </main>
   );
 }

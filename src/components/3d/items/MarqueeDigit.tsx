@@ -3,13 +3,16 @@
 import React, { useMemo, useEffect } from 'react';
 import * as THREE from 'three';
 import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js';
-import fontData from '../../../public/fonts/helvetiker_bold.typeface.json';
+import fontData from '../../../../public/fonts/helvetiker_bold.typeface.json';
+import { type ItemProps, num, flag } from './types';
 
 const font = new FontLoader().parse(fontData);
 
-export const MarqueeNumber: React.FC<{ number: number; lit: boolean }> = ({ number, lit }) => {
+export const MarqueeDigit: React.FC<ItemProps> = ({ item }) => {
+  const digit = Math.min(9, Math.max(0, Math.round(num(item.params.digit, 1))));
+  const lit = flag(item.params.lit, true);
   const { geometry, bulbs } = useMemo(() => {
-    const geometry = new THREE.ExtrudeGeometry(font.generateShapes(String(number), 1.1), {
+    const geometry = new THREE.ExtrudeGeometry(font.generateShapes(String(digit), 1.1), {
       depth: 0.14, bevelEnabled: true, bevelSegments: 3, bevelSize: 0.012, bevelThickness: 0.012, curveSegments: 16,
     });
     geometry.computeBoundingBox();
@@ -32,11 +35,11 @@ export const MarqueeNumber: React.FC<{ number: number; lit: boolean }> = ({ numb
     }
     (face.material as THREE.Material).dispose();
     return { geometry, bulbs };
-  }, [number]);
+  }, [digit]);
   useEffect(() => () => geometry.dispose(), [geometry]);
 
   return (
-    <group position={[1.3, 0.015, 0.8]} rotation={[0, -0.15, 0]}>
+    <group position={[0, 0.015, 0]}>
       <mesh geometry={geometry} castShadow receiveShadow>
         <meshStandardMaterial color="#fff8e9" roughness={0.42} metalness={0.15} />
       </mesh>
