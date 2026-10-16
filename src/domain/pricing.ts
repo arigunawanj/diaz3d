@@ -51,3 +51,24 @@ export function priceDesign(d: Design, catalog: CatalogItem[], basePrice: number
 const idr = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 });
 
 export const formatIDR = (n: number): string => idr.format(n).replace(/Rp\s+/, 'Rp');
+
+const includedFor = (d: Design): Record<CatalogId, number> | null => {
+  const preset = getPreset(d.presetId);
+  return preset ? countUsage(preset.design) : null;
+};
+
+/** What adding one more unit of `id` would cost right now (0 while still covered by the package). */
+export function nextUnitCost(d: Design, catalog: CatalogItem[], id: CatalogId): number {
+  const inc = includedFor(d)?.[id] ?? 0;
+  const price = catalog.find((c) => c.id === id)?.price ?? 0;
+  return countUsage(d)[id] + 1 > inc ? price : 0;
+}
+
+/** Placed items are covered in order: the first N of a kind (N = preset count) are in the package. */
+export function itemIsIncluded(d: Design, uid: string): boolean {
+  const item = d.items.find((i) => i.uid === uid);
+  if (!item) return false;
+  const inc = includedFor(d)?.[item.catalogId] ?? 0;
+  const index = d.items.filter((i) => i.catalogId === item.catalogId).findIndex((i) => i.uid === uid);
+  return index < inc;
+}

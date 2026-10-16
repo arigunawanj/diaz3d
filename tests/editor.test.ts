@@ -88,3 +88,10 @@ test('saveDraft then loadDraft restores', () => {
   assert.ok(store.has(DRAFT_KEY));
   saveDraft({ setItem: () => { throw new Error('quota'); } }, d);
 });
+
+test('load replaces state with a copy', () => {
+  const other = getPreset('emerald-gala')!.design;
+  const d = designReducer(fresh(), { type: 'load', design: other });
+  assert.deepEqual(d, other);
+  assert.notEqual(d, other);
+});

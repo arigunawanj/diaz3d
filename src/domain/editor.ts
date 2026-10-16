@@ -4,6 +4,7 @@ import { parseDesign } from './validate.ts';
 
 export type EditorAction =
   | { type: 'applyPreset'; presetId: string }
+  | { type: 'load'; design: Design }
   | { type: 'addItem'; uid: string; catalogId: CatalogId; position?: [number, number]; params?: PlacedItem['params'] }
   | { type: 'removeItem'; uid: string }
   | { type: 'moveItem'; uid: string; position: [number, number] }
@@ -35,6 +36,8 @@ export function designReducer(state: Design, action: EditorAction): Design {
       const preset = getPreset(action.presetId);
       return preset ? structuredClone(preset.design) : state;
     }
+    case 'load':
+      return structuredClone(action.design);
     case 'addItem': {
       if (state.items.length >= LIMITS.maxItems || !PLACEABLE_IDS.includes(action.catalogId)) return state;
       const same = state.items.filter((i) => i.catalogId === action.catalogId).length;

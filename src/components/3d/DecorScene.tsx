@@ -16,11 +16,9 @@ import { dur } from './motion';
 import { DragController, type BeginDrag, type FloorProjector } from './DragPlane';
 import { ItemToolbar, type ItemToolbarActions } from './ItemToolbar';
 
-export const CATALOG_DRAG_TYPE = 'application/x-diaz3d-catalog';
 
-export type CameraView = 'front' | 'angle' | 'top' | 'closeup';
-export const SURFACE_BACKDROP = '__backdrop';
-export const SURFACE_GARLAND = '__garland';
+import { CATALOG_DRAG_TYPE, SURFACE_BACKDROP, SURFACE_GARLAND, type CameraView } from './constants';
+export { SURFACE_BACKDROP, SURFACE_GARLAND, CATALOG_DRAG_TYPE, type CameraView } from './constants';
 
 export interface DecorSceneProps {
   design: Design;
@@ -37,7 +35,7 @@ export interface DecorSceneProps {
 }
 
 const VIEWS: Record<CameraView, { pos: [number, number, number]; target: [number, number, number]; fov: number }> = {
-  front: { pos: [0, 2.3, 6.6], target: [0, 1.9, 0], fov: 45 },
+  front: { pos: [-0.55, 2.2, 6.9], target: [-0.55, 1.75, 0], fov: 45 },
   angle: { pos: [4.4, 3, 5.8], target: [0, 1.8, 0], fov: 46 },
   closeup: { pos: [-0.15, 1.4, 3.4], target: [0, 1.0, 0.9], fov: 40 },
   top: { pos: [1, 6.2, 6.4], target: [0, 1.2, 0.2], fov: 50 },
@@ -71,7 +69,7 @@ const CameraRig: React.FC<{ view: CameraView; panelCount: number; focus: PlacedI
       target = new THREE.Vector3(fx, 0.9, fz);
       position = new THREE.Vector3(fx * 0.7, 2.0, fz + 3.4);
     } else if (view !== 'closeup') {
-      const width = Math.max(1, (backdropHalfWidth(panelCount) + 1) / 3);
+      const width = Math.max(1, (backdropHalfWidth(panelCount) + 1.8) / 3.05);
       const aspect = size.width / size.height;
       position.sub(target).multiplyScalar(width * Math.max(1, 1.12 / aspect)).add(target);
     }
@@ -91,7 +89,7 @@ const CameraRig: React.FC<{ view: CameraView; panelCount: number; focus: PlacedI
   }, [view, panelCount, fx, fz, camera, size.width, size.height]);
 
   return (
-    <OrbitControls ref={controls} makeDefault enabled={enabled} enableDamping dampingFactor={0.06}
+    <OrbitControls ref={controls} makeDefault enabled={enabled} enableZoom={false} enableDamping dampingFactor={0.06}
       maxPolarAngle={Math.PI / 2 - 0.04} minAzimuthAngle={-1.15} maxAzimuthAngle={1.15} minDistance={1.5} maxDistance={18} target={[0, 1.9, 0]} />
   );
 };
