@@ -13,6 +13,10 @@ import { Backdrop } from './Backdrop';
 import { BalloonGarland } from './BalloonGarland';
 import { ITEM_BOUNDS, ITEM_RENDERERS, type PlacedCatalogId } from './items/registry';
 import { dur } from './motion';
+import { DragController, type BeginDrag, type FloorProjector } from './DragPlane';
+import { ItemToolbar, type ItemToolbarActions } from './ItemToolbar';
+
+export const CATALOG_DRAG_TYPE = 'application/x-diaz3d-catalog';
 
 export type CameraView = 'front' | 'angle' | 'top' | 'closeup';
 export const SURFACE_BACKDROP = '__backdrop';
@@ -28,8 +32,8 @@ export interface DecorSceneProps {
   focusUid: string | null;
   canvasRef: React.RefObject<HTMLCanvasElement>;
   readOnly?: boolean;
-  /** Rendered inside the Canvas for the selected item (toolbar, drag plane). */
-  children?: React.ReactNode;
+  /** Actions for the floating toolbar above the selected item. */
+  toolbar?: ItemToolbarActions;
 }
 
 const VIEWS: Record<CameraView, { pos: [number, number, number]; target: [number, number, number]; fov: number }> = {
@@ -88,7 +92,7 @@ const CameraRig: React.FC<{ view: CameraView; panelCount: number; focus: PlacedI
 
   return (
     <OrbitControls ref={controls} makeDefault enabled={enabled} enableDamping dampingFactor={0.06}
-      maxPolarAngle={Math.PI / 2 - 0.04} minDistance={1.5} maxDistance={18} target={[0, 1.9, 0]} />
+      maxPolarAngle={Math.PI / 2 - 0.04} minAzimuthAngle={-1.15} maxAzimuthAngle={1.15} minDistance={1.5} maxDistance={18} target={[0, 1.9, 0]} />
   );
 };
 
@@ -171,21 +175,48 @@ function usePresence(items: PlacedItem[]) {
 }
 
 export const DecorScene: React.FC<DecorSceneProps> = ({
-  design, selectedUid, onSelect, onDropCatalog, cameraView, focusUid, canvasRef, readOnly, children,
+  design, selectedUid, onSelect, onMoveItem, onDropCatalog, cameraView, focusUid, canvasRef, readOnly, toolbar,
 }) => {
   const mobile = useIsMobile();
   const { leaving, onGone, delayOf } = usePresence(design.items);
   const focus = useMemo(() => design.items.find((i) => i.uid === focusUid) ?? null, [design.items, focusUid]);
+  const selected = design.items.find((i) => i.uid === selectedUid) ?? null;
+  const projectorRef = useRef<FloorProjector | null>(null);
+  const beginDragRef = useRef<BeginDrag | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const [dropHover, setDropHover] = useState(false);
 
   const select = (uid: string | null) => (e: ThreeEvent<MouseEvent>) => {
     if (readOnly || e.delta > CLICK_SLOP) return;
     e.stopPropagation();
     onSelect(uid);
   };
+  const startDrag = (uid: string) => (e: ThreeEvent<PointerEvent>) => {
+    if (readOnly || e.button > 0) return;
+    e.stopPropagation();
+    onSelect(uid);
+    beginDragRef.current?.(uid, e);
+  };
 
-  void onDropCatalog; // wired in by the drop target (Task 6)
+  const onDragOver = (e: React.DragEvent) => {
+    if (readOnly || !e.dataTransfer.types.includes(CATALOG_DRAG_TYPE)) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+    setDropHover(true);
+  };
+  const onDrop = (e: React.DragEvent) => {
+    setDropHover(false);
+    const id = e.dataTransfer.getData(CATALOG_DRAG_TYPE) as CatalogId;
+    const pos = projectorRef.current?.(e.clientX, e.clientY);
+    if (!id || !pos) return;
+    e.preventDefault();
+    onDropCatalog(id, pos);
+  };
+  const toolbarItem = selected && !dragging && toolbar ? selected : null;
 
   return (
+    <div className={`decor-scene${dropHover ? ' is-drop-target' : ''}${dragging ? ' is-dragging' : ''}`}
+      onDragOver={onDragOver} onDragLeave={() => setDropHover(false)} onDrop={onDrop}>
     <Canvas
       ref={canvasRef}
       shadows={!mobile}
@@ -201,13 +232,18 @@ export const DecorScene: React.FC<DecorSceneProps> = ({
         <BalloonGarland garland={design.garland} panelCount={design.backdrop.panelCount} shadows={!mobile} onClick={select(SURFACE_GARLAND)} />
         {design.items.map((item) => (
           <AnimatedItem key={item.uid} item={item} palette={design.garland.palette} selected={item.uid === selectedUid}
-            leaving={false} delay={delayOf(item.uid)} onGone={onGone} onClick={select(item.uid)} />
+            leaving={false} delay={delayOf(item.uid)} onGone={onGone} onClick={select(item.uid)} onPointerDown={startDrag(item.uid)} />
         ))}
         {leaving.map((item) => (
           <AnimatedItem key={`gone-${item.uid}`} item={item} palette={design.garland.palette} selected={false} leaving delay={0} onGone={onGone} />
         ))}
-        {children}
+        {toolbarItem && toolbar && (
+          <ItemToolbar uid={toolbarItem.uid} {...toolbar}
+            position={[toolbarItem.position[0], ITEM_BOUNDS[toolbarItem.catalogId as PlacedCatalogId].height + 0.25, toolbarItem.position[1]]} />
+        )}
       </Suspense>
+      {!readOnly && <DragController projectorRef={projectorRef} beginDragRef={beginDragRef} onMoveItem={onMoveItem} onDragStateChange={setDragging} />}
     </Canvas>
+    </div>
   );
 };

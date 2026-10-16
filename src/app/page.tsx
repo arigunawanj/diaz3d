@@ -13,6 +13,7 @@ export default function Home() {
   const [design, dispatch] = useReducer(designReducer, structuredClone(getPreset(DEFAULT_PRESET_ID)!.design));
   const [selected, setSelected] = useState<string | null>(null);
   const [view, setView] = useState<CameraView>('front');
+  const [focus, setFocus] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   return (
     <main style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -32,7 +33,13 @@ export default function Home() {
       <div style={{ flex: 1 }}>
         <DecorScene design={design} selectedUid={selected} onSelect={setSelected} onMoveItem={(uid, position) => dispatch({ type: 'moveItem', uid, position })}
           onDropCatalog={(catalogId, position) => dispatch({ type: 'addItem', uid: crypto.randomUUID(), catalogId, position })}
-          cameraView={view} focusUid={null} canvasRef={canvasRef} />
+          cameraView={view} focusUid={focus} canvasRef={canvasRef}
+          toolbar={{
+            onFocus: (uid) => setFocus((f) => (f === uid ? null : uid)),
+            onRotate: (uid) => dispatch({ type: 'rotateItem', uid, deltaY: Math.PI / 4 }),
+            onDuplicate: (uid) => dispatch({ type: 'duplicateItem', uid, newUid: crypto.randomUUID() }),
+            onDelete: (uid) => { dispatch({ type: 'removeItem', uid }); setSelected(null); },
+          }} />
       </div>
     </main>
   );
