@@ -354,3 +354,8 @@
   .modal-summary { border-right: 0; border-bottom: 1px solid var(--line); border-radius: var(--radius-lg) var(--radius-lg) 0 0; padding: 22px; }
   .modal-form { padding: 22px; }
 }
+
+/* Admin */
+.admin-login { min-height: 100dvh; display: grid; place-items: center; padding: 16px; }
+.admin-login-card { width: min(380px, 100%); background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 32px; box-shadow: var(--shadow); }
+.admin-login-card h1 { font-size: 22px; letter-spacing: -0.02em; margin: 18px 0 20px; }
