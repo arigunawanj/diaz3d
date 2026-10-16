@@ -16,6 +16,7 @@ import { ViewportOverlay } from './ViewportOverlay';
 import { BottomBar } from './BottomBar';
 import { PriceDrawer } from './PriceDrawer';
 import { isDirty } from './TemplateTab';
+import { SubmitModal } from './SubmitModal';
 
 const DecorScene = dynamic(() => import('@/components/3d/DecorScene').then((m) => m.DecorScene), {
   ssr: false,
@@ -52,9 +53,7 @@ function useSheet(root: React.RefObject<HTMLDivElement>) {
   return { onPointerDown, toggle };
 }
 
-export const Configurator: React.FC<{ catalog: CatalogItem[]; basePrice: number; renderSubmit?: (api: ConfiguratorApi & { close(): void; canvas: HTMLCanvasElement | null }) => React.ReactNode }> = ({
-  catalog, basePrice, renderSubmit,
-}) => {
+export const Configurator: React.FC<{ catalog: CatalogItem[]; basePrice: number }> = ({ catalog, basePrice }) => {
   const [design, dispatch] = useReducer(designReducer, undefined, () => structuredClone(getPreset(DEFAULT_PRESET_ID)!.design));
   const [selectedUid, setSelectedUid] = useState<string | null>(null);
   const [focusUid, setFocusUid] = useState<string | null>(null);
@@ -132,7 +131,7 @@ export const Configurator: React.FC<{ catalog: CatalogItem[]; basePrice: number;
         <BottomBar onOpenPrice={() => setPriceOpen(true)} onSubmit={() => setSubmitOpen(true)} />
       </div>
       {priceOpen && <PriceDrawer pricing={pricing} onClose={() => setPriceOpen(false)} />}
-      {submitOpen && renderSubmit?.({ ...api, close: () => setSubmitOpen(false), canvas: canvasRef.current })}
+      {submitOpen && <SubmitModal canvas={canvasRef.current} onClose={() => setSubmitOpen(false)} />}
     </ConfiguratorContext.Provider>
   );
 };
